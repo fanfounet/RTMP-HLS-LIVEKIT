@@ -20,7 +20,12 @@ lk ingress create ingress-request.json \
   --api-key devkey \
   --api-secret secret
 `
-
+Réponse
+`
+IngressID: IN_XLSkcYLxLxPY Status: ENDPOINT_INACTIVE
+URL: rtmp://localhost:1935 Stream Key:xxxxxxxxx
+`
+Vous pouvez renseigner OBS par exemple avec l'adresse rtmp ainsi que la clé de stream qui vient dêtre générée
 ## Création et démarrage du egress
 `
 lk egress start --type participant request.json \
@@ -28,3 +33,7 @@ lk egress start --type participant request.json \
   --api-key devkey \
   --api-secret secret
 `
+
+## Résultat
+Ouvrir VLC et mettre l'adresse suivante :
+`http://localhost:8000/index-live.m3u8`
