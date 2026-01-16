@@ -1,0 +1,8 @@
+
+{
+  "input_type": "RTMP_INPUT",
+  "name": "rtmp-live",
+  "room_name": "test-room",
+  "participant_identity": "ingress-publisher"
+}
+
