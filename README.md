@@ -4,6 +4,8 @@
 
 ## installation du livekit CLI
 (voir doc)
+Sous MAC
+`brew install livekit-cli`
 
 ## Création d'une salle
 `
