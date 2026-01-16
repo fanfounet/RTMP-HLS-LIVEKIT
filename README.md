@@ -15,7 +15,7 @@ lk room create test-room \
   --api-secret secret
 `
 
-## Création du ingress RTMP
+## Création du ingress RTMP - création d'une entrée externe RTMP dans la salle
 `
 lk ingress create ingress-request.json \
   --url http://localhost:7880 \
@@ -28,7 +28,7 @@ IngressID: IN_XLSkcYLxLxPY Status: ENDPOINT_INACTIVE
 URL: rtmp://localhost:1935 Stream Key:xxxxxxxxx
 `
 Vous pouvez renseigner OBS par exemple avec l'adresse rtmp ainsi que la clé de stream qui vient dêtre générée
-## Création et démarrage du egress
+## Démarrage du egress - Enregistre dans hls les xxx.ts
 `
 lk egress start --type participant request.json \
   --url http://localhost:7880 \

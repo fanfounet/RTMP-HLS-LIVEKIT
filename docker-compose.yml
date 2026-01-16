@@ -41,7 +41,7 @@ services:
       - livekit
     restart: unless-stopped
 
-
+# ---- Egress (LiveKit → RTMP/HLS) ---------------------------------------
   egress:
     image: livekit/egress:latest
     container_name: livekit-egress
@@ -58,4 +58,12 @@ services:
       - redis
       - livekit
     restart: unless-stopped
+
+# ---- HLS Cleanup Service -------------------------------------------------
+  cleaner:
+    image: alpine
+    volumes:
+      - ./hls:/hls
+    entrypoint: ["sh", "-c", "while true; do find /hls -type f -name '*.ts' -mmin +5 -delete; sleep 60; done"]
+
 
