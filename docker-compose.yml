@@ -58,6 +58,33 @@ services:
       - redis
       - livekit
     restart: unless-stopped
+  
+# --- HLS Server ---------------------------------------------------------
+  hls-server:
+    image: httpd:alpine
+    container_name: hls-server
+    ports:
+      - "8000:80"
+    volumes:
+      - ./hls:/usr/local/apache2/htdocs/:ro
+      - ./hls.conf:/usr/local/apache2/conf/extra/hls.conf:ro
+    command: ["/bin/sh","-c","echo 'Include conf/extra/hls.conf' >> /usr/local/apache2/conf/httpd.conf && httpd-foreground"]
+    depends_on:
+      - egress
+    restart: unless-stopped
+
+# ---- LiveKit Web UI ------------------------------------------------------
+  ui:
+    build: ./ui
+    container_name: livekit-ui
+    ports:
+      - "5000:5000"
+    depends_on:
+      - livekit
+      - ingress
+      - egress
+    restart: unless-stopped
+
 
 # ---- HLS Cleanup Service -------------------------------------------------
   cleaner:

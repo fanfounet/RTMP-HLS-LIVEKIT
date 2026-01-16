@@ -1,0 +1,192 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>LiveKit Control Panel</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 24px; }
+    .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .card { border: 1px solid #ddd; border-radius: 8px; padding: 16px; background:#fafafa; }
+    input, button { padding: 8px 10px; margin: 4px 0; }
+    pre { background: #111; color: #eaeaea; padding: 12px; border-radius: 6px; overflow:auto;}
+    video { width: 100%; max-height: 420px; background:#000 }
+    .row { display:flex; gap:8px; align-items:center; flex-wrap: wrap;}
+    .muted { color:#666 }
+  </style>
+</head>
+<body>
+
+<h1>LiveKit — Mini Console</h1>
+
+<div class="grid">
+
+  <!-- Création Room -->
+  <div class="card">
+    <h2>Créer une Room</h2>
+    <div class="row">
+      <input id="roomName" placeholder="Nom de la room (ex: test-room)" />
+      <button onclick="createRoom()">Créer</button>
+    </div>
+    <div class="muted">La room sera auto-créée côté serveur si <code>room.auto_create=true</code>, mais on peut aussi la créer ici.</div>
+  </div>
+
+  <!-- Création Ingress RTMP -->
+  <div class="card">
+    <h2>Créer une entrée RTMP</h2>
+    <div class="row">
+      <input id="ingressRoom" placeholder="Room (ex: test-room)" />
+      <input id="identity"   placeholder="Identity (ex: ingress-publisher)" />
+    </div>
+    <div class="row">
+      <input id="ingressName" placeholder="Nom (optionnel, ex: rtmp-A)" />
+      <button onclick="createIngress()">Créer Ingress</button>
+    </div>
+    <pre id="ingressResult"></pre>
+  </div>
+
+  <!-- Egress -->
+  <div class="card">
+    <h2>Egress HLS</h2>
+    <div class="row">
+      <input id="egressRoom" placeholder="Room (ex: test-room)" />
+      <input id="egressIdentity" placeholder="Identity (ex: ingress-publisher)" />
+    </div>
+    <div class="row">
+      <button onclick="startEgress()">Start Egress</button>
+      <input id="egressId" placeholder="EG_xxxxx à stopper" />
+      <button onclick="stopEgress()">Stop Egress</button>
+    </div>
+    <pre id="egressResult"></pre>
+  </div>
+
+  <!-- Player HLS -->
+  <div class="card">
+    <h2>Player HLS</h2>
+    <video id="video" controls autoplay muted playsinline></video>
+    <div class="row">
+      <input id="hlsUrl" value="http://localhost:8000/index-live.m3u8" style="flex:1"/>
+      <button onclick="playHls()">Lire</button>
+    </div>
+    <pre id="playerLog"></pre>
+  </div>
+
+  <!-- Monitoring -->
+  <div class="card" style="grid-column: 1 / span 2">
+    <h2>Monitoring</h2>
+    <div class="row">
+      <button onclick="refreshAll()">Rafraîchir</button>
+      <span class="muted">Actualisation manuelle. On peut brancher des webhooks pour de l’auto-refresh.</span>
+    </div>
+    <div class="grid" style="grid-template-columns: repeat(4, 1fr);">
+      <div>
+        <h3>Rooms</h3>
+        <pre id="roomsBox">—</pre>
+      </div>
+      <div>
+        <h3>Participants (room)</h3>
+        <div class="row">
+          <input id="participantsRoom" placeholder="Nom room pour lister" />
+          <button onclick="listParticipants()">Lister</button>
+        </div>
+        <pre id="participantsBox">—</pre>
+      </div>
+      <div>
+        <h3>Ingress</h3>
+        <pre id="ingressBox">—</pre>
+      </div>
+      <div>
+        <h3>Egress</h3>
+        <pre id="egressBox">—</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+<script>
+async function createRoom() {
+  const name = document.getElementById('roomName').value.trim();
+  if(!name) return alert('Nom de room requis');
+  const r = await fetch('/api/rooms', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({name})});
+  document.getElementById('roomsBox').innerText = await r.text();
+}
+
+async function createIngress() {
+  const room = document.getElementById('ingressRoom').value.trim();
+  const identity = document.getElementById('identity').value.trim();
+  const name = document.getElementById('ingressName').value.trim();
+  if(!room || !identity) return alert('Room et identity requis');
+  const r = await fetch('/api/ingress', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({room, identity, name})});
+  document.getElementById('ingressResult').innerText = await r.text();
+  await refreshIngress();
+}
+
+async function startEgress() {
+  const room = document.getElementById('egressRoom').value.trim();
+  const identity = document.getElementById('egressIdentity').value.trim();
+  if(!room || !identity) return alert('Room et identity requis');
+  const r = await fetch('/api/egress/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({room, identity})});
+  const txt = await r.text();
+  document.getElementById('egressResult').innerText = txt;
+  try { const j = JSON.parse(txt); if(j.egressId || j.egress_id) document.getElementById('egressId').value = j.egressId || j.egress_id; } catch {}
+  await refreshEgress();
+}
+
+async function stopEgress() {
+  const egressId = document.getElementById('egressId').value.trim();
+  if(!egressId) return alert('egressId requis');
+  const r = await fetch('/api/egress/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({egressId})});
+  document.getElementById('egressResult').innerText = await r.text();
+  await refreshEgress();
+}
+
+async function refreshRooms() {
+  const r = await fetch('/api/rooms');
+  document.getElementById('roomsBox').innerText = await r.text();
+}
+async function listParticipants() {
+  const room = document.getElementById('participantsRoom').value.trim();
+  if(!room) return alert('Nom de room requis');
+  const r = await fetch('/api/rooms/'+encodeURIComponent(room)+'/participants');
+  document.getElementById('participantsBox').innerText = await r.text();
+}
+async function refreshIngress() {
+  const r = await fetch('/api/ingress');
+  document.getElementById('ingressBox').innerText = await r.text();
+}
+async function refreshEgress() {
+  const r = await fetch('/api/egress');
+  document.getElementById('egressBox').innerText = await r.text();
+}
+async function refreshAll() {
+  await Promise.all([refreshRooms(), refreshIngress(), refreshEgress()]);
+}
+
+function playHls() {
+  const hlsUrl = document.getElementById('hlsUrl').value.trim();
+  const video = document.getElementById('video');
+  const log = document.getElementById('playerLog');
+  log.textContent = '';
+  if (Hls.isSupported()) {
+    const hls = new Hls({
+      lowLatencyMode: true,
+      maxBufferLength: 2,
+      backBufferLength: 0,
+    });
+    hls.loadSource(hlsUrl);
+    hls.attachMedia(video);
+    hls.on(Hls.Events.ERROR, (_e, data) => {
+      log.textContent += `[HLS] ${data.type} – ${data.details}\n`;
+    });
+  } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    video.src = hlsUrl;
+    video.play();
+  } else {
+    log.textContent = "HLS non supporté dans ce navigateur.";
+  }
+}
+</script>
+</body>
+</html>

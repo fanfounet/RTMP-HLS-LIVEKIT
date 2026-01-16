@@ -3,6 +3,8 @@ port: 7880
 rtc:
   use_external_ip: false
 
+room:
+  auto_create: true
 
 redis:
   address: redis:6379

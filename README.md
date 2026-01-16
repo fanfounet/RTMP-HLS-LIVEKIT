@@ -39,3 +39,6 @@ lk egress start --type participant request.json \
 ## Résultat
 Ouvrir VLC et mettre l'adresse suivante :
 `http://localhost:8000/index-live.m3u8`
+
+## Utiliser l'interface graphique
+`http://localhost:5000/dashboard.html`

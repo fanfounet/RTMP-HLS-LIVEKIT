@@ -1,0 +1,16 @@
+{
+  "name": "livekit-ui",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "livekit-server-sdk": "^2.15.0",
+    "express": "^4.18.2",
+    "body-parser": "^1.20.2"
+  }
+}
+
+
