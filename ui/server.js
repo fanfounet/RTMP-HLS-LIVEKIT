@@ -79,7 +79,7 @@ app.post("/api/egress/start", async (req, res) => {
 
 const output = {
   segments: new SegmentedFileOutput({
-    filenamePrefix: '/output/stream1',
+    filenamePrefix: '/output/{room_name}/',
     playlistName: 'index.m3u8',
     livePlaylistName: 'index-live.m3u8',
     segmentDuration: 1,
